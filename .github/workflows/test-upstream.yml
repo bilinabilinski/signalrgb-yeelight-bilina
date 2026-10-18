@@ -41,6 +41,14 @@ jobs:
       - name: Test actual SignalRGB exit monitoring with mock Yeelight
         shell: pwsh
         run: node tests/test-watcher.cjs
+      - name: Test autostart shortcut installer and clean uninstall
+        shell: powershell
+        run: |
+          .\INSTALL_WHITE_RESTORE.ps1 -SkipStart
+          $lnk = Join-Path ([Environment]::GetFolderPath("Startup")) "Yeelight Bilina White Restore.lnk"
+          if (!(Test-Path $lnk)) { throw "White restore startup shortcut missing" }
+          .\UNINSTALL_WHITE_RESTORE.ps1
+          if (Test-Path $lnk) { throw "Uninstall did not remove startup shortcut" }
       - name: End-to-end installer download and install on Windows
         shell: powershell
         run: .\INSTALL.ps1 -SkipProcessCheck
