@@ -4,6 +4,7 @@
 param(
     [switch]$Watch,
     [switch]$Once,
+    [switch]$SimulateWindowsShutdown,
     [string]$ConfigFile = "",
     [string]$IpCsv = "",
     [int]$Port = 55443,
@@ -118,14 +119,31 @@ if ($Once) {
     Log-Message "Manual white-restore test started."
     if (Restore-All) { exit 0 } else { exit 1 }
 }
-if (!$Watch) { throw "Specify -Once or -Watch." }
+if (!$Watch -and !$SimulateWindowsShutdown) { throw "Specify -Once, -Watch or -SimulateWindowsShutdown." }
+# Windows does NOT guarantee SignalRGB.exe exits before it terminates this watcher.
+# Register for the session-ending notification before entering the polling loop.
+$shutdownCode = Join-Path $PSScriptRoot "YeelightWindowsShutdown.cs"
+if (!(Test-Path -LiteralPath $shutdownCode)) {
+    throw "Windows shutdown handler missing: YeelightWindowsShutdown.cs. Reinstall WHITE RESTORE."
+}
+Add-Type -Path $shutdownCode -ReferencedAssemblies @("System.dll","System.Core.dll") -ErrorAction Stop
+[YeelightBilina.WindowsShutdownWhite]::Register([string[]]$ips,$kelvin,$brightness,$Port,$LogFile)
+if ($SimulateWindowsShutdown) {
+    Log-Message "Simulating Windows shutdown event (does NOT turn off Windows)."
+    if ([YeelightBilina.WindowsShutdownWhite]::SimulateForTest()) {
+        Log-Message "SIMULATED_WINDOWS_SHUTDOWN_OK"
+        exit 0
+    }
+    Log-Message "SIMULATED_WINDOWS_SHUTDOWN_FAILED"
+    exit 1
+}
 $mutex = New-Object System.Threading.Mutex($false, "Local\YeelightBilina_WhiteRestore")
 $acquired = $false
 try {
     try { $acquired = $mutex.WaitOne(0,$false) }
     catch [System.Threading.AbandonedMutexException] { $acquired = $true }
     if (!$acquired) { exit 0 }
-    Log-Message "Watcher started. Waiting for SignalRGB exit."
+    Log-Message "Watcher started. Listening for SignalRGB exit AND Windows shutdown/logoff."
     $wasRunning = SignalRGB-Running
     while (!(Test-Path (Join-Path $root "stop-white-restore.flag"))) {
         Start-Sleep -Seconds 2
