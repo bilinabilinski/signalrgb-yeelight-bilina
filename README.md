@@ -26,6 +26,28 @@ Działa to niezależnie od wcześniej zapamiętanej opcji `Turn off on unlink pr
 
 Aby wgrać poprawkę, pobierz ponownie **najnowszy ZIP** repozytorium, rozpakuj i uruchom `INSTALL.cmd`. Poprzednia kopia wtyczki jest zachowywana jako folder backup.
 
+## Automatyczny powrót do prawdziwej bieli po zamknięciu SignalRGB
+
+**Zalecane rozwiązanie dla GU10 W1 Color (`colorc`):** wtyczka SignalRGB nie zawsze ma czas przesłać pakiety podczas zamykania aplikacji. Dlatego dodany jest **opcjonalny, niezależny proces Windows**, który wykrywa zakończenie `SignalRGB.exe` i następnie przywraca natywny tryb bieli Yeelight przez TCP 55443.
+
+### Instalacja
+
+1. Pobierz [ZIP z repozytorium](https://github.com/bilinabilinski/signalrgb-yeelight-bilina/archive/refs/heads/main.zip) i wybierz **Wyodrębnij wszystkie**.
+2. Pozostaw działającą dotychczasową wtyczkę `Yeelight Bilina`. **Nie trzeba jej reinstalować.**
+3. Z rozpakowanego folderu uruchom **`INSTALL_WHITE_RESTORE.cmd`**.
+4. Mechanizm uruchomi się w tle i będzie automatycznie startował przy logowaniu użytkownika.
+5. Otwórz SignalRGB, ustaw kolorowy efekt, następnie zamknij **Quit/Exit**. Po około 5–10 sekundach wszystkie trzy żarówki powinny wrócić do bieli.
+
+Domyślne urządzenia: `192.168.1.149`, `192.168.1.150`, `192.168.1.153`. Komendy: `set_power(on)`, `set_ct_abx(4000 K)`, `set_bright(100%)`, z potwierdzeniem odpowiedzi `result: ["ok"]`. Przy błędzie każda nieudana żarówka jest ponawiana do trzech razy.
+
+**Test diagnostyczny:** zamknij SignalRGB przez Exit i uruchom `TEST_WHITE_RESTORE.cmd`. Ten test wysyła biel natychmiast, bez czekania na zamknięcie programu. Jeśli nie działa, przyczyną nie jest wykrywanie zakończenia programu. Wyślij log `%LOCALAPPDATA%\YeelightBilina\white-restore.log` — pokaże odpowiedź połączenia TCP lub błąd.
+
+**Zmiana odcienia bieli:** edytuj `%LOCALAPPDATA%\YeelightBilina\white-restore.json`, np. `"kelvin": 2700` dla ciepłej bieli lub `"kelvin": 5000` dla chłodniejszej; dopuszczalny zakres 2700–6500 K. Możesz też zmienić `"brightness"` (1–100) i listę `"ips"`.
+
+**Wyłączenie:** uruchom `UNINSTALL_WHITE_RESTORE.cmd`. Usuwa skrót autostartu oraz zatrzymuje watcher w ciągu kilku sekund. Zachowuje log i konfigurację.
+
+**Ważne:** zainstalowany mechanizm to niewielki skrypt PowerShell uruchomiony w tle przez skrót w autostarcie Windows — nie ingeruje w efekty SignalRGB podczas działania programu. Nie wymaga uprawnień administratora. Działa po normalnym zakończeniu procesu aplikacji, ale nie po odłączeniu zasilania komputera ani w czasie uśpienia systemu. Nie przywraca automatycznie dokładnej wcześniejszej wartości Kelvina; domyślnie ustawia 4000 K.
+
 ## Naprawione błędy
 
 - QML wywołuje `link(id)` / `unlink(id)` zamiast przekazywania obiektu QML.
