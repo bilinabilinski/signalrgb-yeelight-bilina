@@ -108,6 +108,7 @@ const cached = discovery.cache.GetByIP(this.ipToConnectTo);
 '@
 if (!$js.Contains($createOld)) {throw "UDP cache lookup changed; stopping."}
 $js = $js.Replace($createOld,$createNew)
+$js = $js.Replace('export function Name() { return "Yeelight"; }','export function Name() { return "Yeelight Bilina"; }')
 $js = $js.Replace('export function Version() { return "1.0.0"; }','export function Version() { return "1.0.1-bilina"; }')
 if (!$js.Contains('service.log("Initializing Plugin!");')) {throw "Initialize() changed; stopping."}
 $js = $js.Replace('service.log("Initializing Plugin!");','service.log("[Bilina] Yeelight upstream-based fix v1.0.1 active");')
