@@ -5,9 +5,16 @@ $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $source = Join-Path $here "Watch-SignalRGB.ps1"
 if (!(Test-Path $source)) { throw "Extract the whole GitHub ZIP, including Watch-SignalRGB.ps1." }
+$csSource = Join-Path $here "YeelightWindowsShutdown.cs"
+if (!(Test-Path $csSource)) { throw "Extract whole ZIP: YeelightWindowsShutdown.cs is missing." }
 $dest = Join-Path $env:LOCALAPPDATA "YeelightBilina"
 New-Item -Path $dest -ItemType Directory -Force | Out-Null
+# Ask a previously installed watcher to quit gracefully before overwriting its files.
+$flag = Join-Path $dest "stop-white-restore.flag"
+[System.IO.File]::WriteAllText($flag, "stop")
+Start-Sleep -Seconds 3
 Copy-Item -LiteralPath $source -Destination (Join-Path $dest "Watch-SignalRGB.ps1") -Force
+Copy-Item -LiteralPath $csSource -Destination (Join-Path $dest "YeelightWindowsShutdown.cs") -Force
 $conf = Join-Path $dest "white-restore.json"
 if (!(Test-Path $conf)) {
     $config = @{ips=@("192.168.1.149","192.168.1.150","192.168.1.153"); kelvin=4000; brightness=100}
@@ -34,4 +41,4 @@ Write-Host "Installed Yeelight white restoration watcher." -ForegroundColor Gree
 Write-Host "Startup shortcut: $shortcutPath"
 Write-Host "Config (edit Kelvin/brightness if desired): $conf"
 Write-Host "Logs: $(Join-Path $dest 'white-restore.log')"
-Write-Host "It triggers only after SignalRGB has been running and then exits."
+Write-Host "It restores white on SignalRGB exit AND on Windows shutdown/logoff."
