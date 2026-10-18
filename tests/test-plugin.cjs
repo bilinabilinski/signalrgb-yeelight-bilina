@@ -9,7 +9,7 @@ const qml = fs.readFileSync(path.join(dir, "Yeelight.qml"), "utf8");
 assert.match(qml, /discovery\.link\(root\.device\.id\)/);
 assert.match(qml, /discovery\.unlink\(root\.device\.id\)/);
 assert.doesNotMatch(qml, /discovery\.link\(root\.device\);/);
-assert.match(js, /Yeelight upstream-based fix v1\.0\.1 active/);
+assert.match(js, /Yeelight upstream-based fix v1\.0\.2 active/);
 assert.match(js, /this\.cacheMap\.clear\(\)/);
 assert.match(js, /value\?\.port \?\? 55444/);
 
@@ -68,4 +68,34 @@ assert.equal(discovery.cache.cacheMap.size, 3);
 discovery.cache.PurgeCache();
 assert.equal(discovery.cache.cacheMap.size, 0);
 assert.equal(stored.has("ipCache/cache"), false);
-console.log("PASS: syntax parsed, 3 devices, Link/Unlink, cached object, missing device, clear cache.");
+// Test the real Shutdown() path with device protocol calls intercepted.
+const packets = [];
+context.device = {log: message => log.push(String(message))};
+context._sentPackets = packets;
+context.controller = {model: "colorc", ip: "192.168.1.149"};
+context.TurnOffOnShutdown = false; // existing old setting must not prevent restoration
+vm.runInContext('Yeelight.setToken("test-token"); Yeelight.sendPacket = function(packet) { _sentPackets.push(String(packet)); };', context);
+
+for (const [id, ip] of devices) {
+  packets.length = 0;
+  context.controller = {model: "colorc", ip};
+  vm.runInContext("Shutdown(false);", context);
+  assert.equal(packets.length, 3, "must send power, brightness, white to " + id);
+  assert.match(packets[0], /"method":"set_power"/);
+  assert.match(packets[0], /"params":\["on","sudden"\]/);
+  assert.match(packets[1], /"method":"set_bright"/);
+  assert.match(packets[1], /"params":\[100,"sudden",0\]/);
+  assert.match(packets[2], /"method":"set_rgb"/);
+  assert.match(packets[2], /"params":\[16777215,"sudden",0\]/);
+}
+// Models other than colorc retain original default behavior (no exit packet).
+packets.length = 0;
+context.controller = {model: "color"};
+vm.runInContext("Shutdown(false);", context);
+assert.equal(packets.length, 0);
+// Suspend still sends black for colorc, as in official code.
+packets.length = 0;
+context.controller = {model: "colorc"};
+vm.runInContext("Shutdown(true);", context);
+assert.match(packets[packets.length - 1], /"params":\[0,"sudden",0\]/);
+console.log("PASS: syntax, 3 Link/Unlink bulbs, cache, 3 shutdown white restores, other models, suspend black.");
