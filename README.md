@@ -38,7 +38,7 @@ Aby wgrać poprawkę, pobierz ponownie **najnowszy ZIP** repozytorium, rozpakuj 
 4. Mechanizm uruchomi się w tle i będzie automatycznie startował przy logowaniu użytkownika.
 5. Otwórz SignalRGB, ustaw kolorowy efekt, następnie zamknij **Quit/Exit**. Po około 5–10 sekundach wszystkie trzy żarówki powinny wrócić do bieli.
 
-Domyślne urządzenia: `192.168.1.149`, `192.168.1.150`, `192.168.1.153`. Komendy: `set_power(on)`, `set_ct_abx(4000 K)`, `set_bright(100%)`, z potwierdzeniem odpowiedzi `result: ["ok"]`. Przy błędzie każda nieudana żarówka jest ponawiana do trzech razy.
+Domyślne urządzenia: `192.168.1.149`, `192.168.1.150`, `192.168.1.153`. Komendy: `set_power(on)`, `set_ct_abx(4000 K)`, `set_bright(100%)`, z potwierdzeniem odpowiedzi `result: ["ok"]`. Przy błędzie nieudane żarówki są ponawiane maksymalnie dziewięć razy (przez około 45 sekund), aby dać czas na wygaśnięcie sesji UDP.
 
 **Test diagnostyczny:** zamknij SignalRGB przez Exit i uruchom `TEST_WHITE_RESTORE.cmd`. Ten test wysyła biel natychmiast, bez czekania na zamknięcie programu. Jeśli nie działa, przyczyną nie jest wykrywanie zakończenia programu. Wyślij log `%LOCALAPPDATA%\YeelightBilina\white-restore.log` — pokaże odpowiedź połączenia TCP lub błąd.
 
