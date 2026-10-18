@@ -93,7 +93,7 @@ function Send-White([string]$ip) {
     }
 }
 function SignalRGB-Running() {
-    return (@(Get-Process -Name "SignalRGB*" -ErrorAction SilentlyContinue).Count -gt 0)
+    return (@(Get-Process -Name "SignalRGB" -ErrorAction SilentlyContinue).Count -gt 0)
 }
 function Restore-All {
     $pending = @($ips)
