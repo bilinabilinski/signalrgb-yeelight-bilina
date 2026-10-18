@@ -9,9 +9,22 @@ Ta wersja jest **nakładką na oficjalny dodatek** [SignalRGB/Yeelight](https://
 3. Wybierz **Wyodrębnij wszystkie** (nie uruchamiaj plików bezpośrednio z ZIP).
 4. Uruchom `INSTALL.cmd` z rozpakowanego folderu.
 5. Instalator pobierze źródła **bezpośrednio z oficjalnego GitLaba**, zastosuje poprawki i umieści dodatek w `Dokumenty\WhirlwindFX\Plugins\YeelightBilina`.
-6. Uruchom SignalRGB, wyłącz starsze testowe dodatki ColorC i sprawdź usługę **Yeelight Bilina**. W logach szukaj `[Bilina] Yeelight upstream-based fix v1.0.1 active`.
+6. Uruchom SignalRGB, wyłącz starsze testowe dodatki ColorC i sprawdź usługę **Yeelight Bilina**. W logach szukaj `[Bilina] Yeelight upstream-based fix v1.0.2 active`.
 
 **Uwaga:** Wtyczka z naszego repozytorium nie instaluje się przez samo `Check for Updates` w SignalRGB. Instaluje ją skrypt `INSTALL.cmd`.
+
+## Powrót do białego światła po zamknięciu SignalRGB (v1.0.2)
+
+Dla żarówek Yeelight GU10 W1 Color (`colorc`) podczas **zwykłego zamknięcia** SignalRGB wtyczka automatycznie wysyła:
+- `set_power: on`;
+- `set_bright: 100`;
+- `set_rgb: 16777215` (biały `#FFFFFF`).
+
+Działa to niezależnie od wcześniej zapamiętanej opcji `Turn off on unlink process`. Na czas zawieszenia systemu zachowano dotychczasowe wygaszanie. Dla modeli innych niż `colorc` pozostaje oryginalne działanie.
+
+**Uwaga:** `#FFFFFF` jest bielą RGB, nie gwarantuje powrotu do *dokładnie* wcześniejszej temperatury barwowej (Kelvinów), jasności ani trybu dedykowanych białych diod. Te parametry wymagają oddzielnej obsługi trybu `set_ct_abx` i informacji o ustawieniu użytkownika. Mechanizm `Shutdown()` wywoływany jest przy **normalnym zamknięciu** programu lub wyłączeniu streamingu. Przymusowe zakończenie procesu może uniemożliwić wykonanie poleceń.
+
+Aby wgrać poprawkę, pobierz ponownie **najnowszy ZIP** repozytorium, rozpakuj i uruchom `INSTALL.cmd`. Poprzednia kopia wtyczki jest zachowywana jako folder backup.
 
 ## Naprawione błędy
 
