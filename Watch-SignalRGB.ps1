@@ -132,9 +132,11 @@ if ($SimulateWindowsShutdown) {
     Log-Message "Simulating Windows shutdown event (does NOT turn off Windows)."
     if ([YeelightBilina.WindowsShutdownWhite]::SimulateForTest()) {
         Log-Message "SIMULATED_WINDOWS_SHUTDOWN_OK"
+        Write-Host "OK: Shutdown event path restored white on all bulbs." -ForegroundColor Green
         exit 0
     }
     Log-Message "SIMULATED_WINDOWS_SHUTDOWN_FAILED"
+    Write-Host "FAILED: Check $LogFile" -ForegroundColor Red
     exit 1
 }
 $mutex = New-Object System.Threading.Mutex($false, "Local\YeelightBilina_WhiteRestore")
