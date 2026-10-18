@@ -9,7 +9,7 @@ Ta wersja jest **nakładką na oficjalny dodatek** [SignalRGB/Yeelight](https://
 3. Wybierz **Wyodrębnij wszystkie** (nie uruchamiaj plików bezpośrednio z ZIP).
 4. Uruchom `INSTALL.cmd` z rozpakowanego folderu.
 5. Instalator pobierze źródła **bezpośrednio z oficjalnego GitLaba**, zastosuje poprawki i umieści dodatek w `Dokumenty\WhirlwindFX\Plugins\YeelightBilina`.
-6. Uruchom SignalRGB, wyłącz starsze testowe dodatki ColorC i sprawdź usługę **Yeelight Bilina**. W logach szukaj `[Bilina] Yeelight upstream-based fix v1.0.2 active`.
+6. Uruchom SignalRGB, wyłącz starsze testowe dodatki ColorC i sprawdź usługę **Yeelight Bilina**. W logach szukaj `[Bilina] Yeelight upstream-based fix v1.0.3 active`.
 
 **Uwaga:** Wtyczka z naszego repozytorium nie instaluje się przez samo `Check for Updates` w SignalRGB. Instaluje ją skrypt `INSTALL.cmd`.
 
@@ -47,6 +47,17 @@ Domyślne urządzenia: `192.168.1.149`, `192.168.1.150`, `192.168.1.153`. Komend
 **Wyłączenie:** uruchom `UNINSTALL_WHITE_RESTORE.cmd`. Usuwa skrót autostartu oraz zatrzymuje watcher w ciągu kilku sekund. Zachowuje log i konfigurację.
 
 **Ważne:** zainstalowany mechanizm to niewielki skrypt PowerShell uruchomiony w tle przez skrót w autostarcie Windows — nie ingeruje w efekty SignalRGB podczas działania programu. Nie wymaga uprawnień administratora. Działa po normalnym zakończeniu procesu aplikacji, ale nie po odłączeniu zasilania komputera ani w czasie uśpienia systemu. Nie przywraca automatycznie dokładnej wcześniejszej wartości Kelvina; domyślnie ustawia 4000 K.
+
+## Prawdziwa czerń w animacjach — v1.0.3
+
+W oryginalnym rendererze Yeelight każde `RGB(0,0,0)` skutkowało ustawieniem jasności na **1%** zamiast fizycznego wyłączenia światła. Dla modelu `colorc` poprawka wykorzystuje `set_power(off)` i włącza żarówkę ponownie (`set_power(on)`, jasność 100%, a następnie kolor RGB), kiedy efekt wraca do koloru.
+
+- Trzy żarówki `colorc` obsługują prawdziwą czerń, a powtórne czarne ramki nie wysyłają kolejnych poleceń wyłączenia.
+- Zmiana dotyczy tylko `colorc`, więc inne modele Yeelight korzystają ze swojego dotychczasowego renderera.
+- W pełni zachowano synchronizację efektów z SignalRGB; **częste przełączanie czerni i koloru może mieć widoczne opóźnienie**, zależnie od firmware i szybkości komend UDP.
+- Aby zaktualizować wtyczkę, pobierz ponownie ZIP i uruchom **`INSTALL.cmd`** po zamknięciu SignalRGB. Pliki `INSTALL_WHITE_RESTORE.cmd` i konfiguracja przywracania bieli nie wymagają ponownej instalacji.
+
+Przetestowano logiczne przejścia `czarny → czarny → czerwony → czerwony → czarny` na trzech symulowanych żarówkach oraz zachowanie innych modeli. **Do potwierdzenia pełnego działania potrzebny jest test na fizycznych żarówkach.**
 
 ## Naprawione błędy
 
