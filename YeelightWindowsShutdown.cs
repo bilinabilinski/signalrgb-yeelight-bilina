@@ -86,16 +86,27 @@ namespace YeelightBilina
             for (int i = 0; i < ips.Length; i++)
             {
                 int index = i;
-                tasks[i] = Task.Run(() => { results[index] = RestoreOne(ips[index]); });
+                tasks[i] = Task.Run(() => { results[index] = RestoreWithRetry(ips[index]); });
             }
             // Three devices in parallel, bounded so Windows is not blocked indefinitely.
-            try { Task.WaitAll(tasks, 4300); }
+            try { Task.WaitAll(tasks, 6900); }
             catch (Exception ex) { WriteLog("WINDOWS_SHUTDOWN_EXCEPTION: " + ex.Message); }
             bool ok = true;
             for (int i = 0; i < tasks.Length; i++)
                 if (!tasks[i].IsCompleted || !results[i]) ok = false;
             WriteLog(stage + (ok ? " OK" : " FAILED_OR_TIMED_OUT"));
             return ok;
+        }
+
+        // Each bulb gets an independent retry, without delaying successful bulbs.
+        // A device may still be occupied by SignalRGB's previous UDP session.
+        private static bool RestoreWithRetry(string ip)
+        {
+            if (RestoreOne(ip)) return true;
+            Thread.Sleep(500);
+            if (RestoreOne(ip)) return true;
+            Thread.Sleep(500);
+            return RestoreOne(ip);
         }
 
         private static bool RestoreOne(string ip)
