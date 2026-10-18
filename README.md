@@ -1,13 +1,36 @@
-# SignalRGB Yeelight — Bilina
+# Yeelight Bilina — poprawka oryginalnej integracji SignalRGB
 
-Repozytorium poprawek integracji Yeelight z SignalRGB, w szczególności problemu **`Cannot read property 'id' of undefined`** podczas parowania żarówek **GU10 W1 Color (`colorc`)**.
+Ta wersja jest **nakładką na oficjalny dodatek** [SignalRGB/Yeelight](https://gitlab.com/signalrgb/yeelight) — nie nową implementacją protokołu. Zachowuje oryginalną obsługę animacji, wykrywania SSDP, UDP 55444 i komponentów.
 
-## Cel
-- zachować oryginalne wykrywanie urządzeń i synchronizację z efektami SignalRGB;
-- poprawić stabilność `Link` / `Unlink` i nieistniejące wpisy cache;
-- nie mieszać tej integracji z repozytoriami innych urządzeń;
-- nie publikować kopii upstream bez weryfikacji jego licencji.
+## Instalacja (Windows 10/11)
 
-Źródła upstream: https://gitlab.com/signalrgb/yeelight/
+1. Zamknij SignalRGB **całkowicie**, również obok zegara.
+2. Pobierz [ZIP tego repozytorium](https://github.com/bilinabilinski/signalrgb-yeelight-bilina/archive/refs/heads/main.zip).
+3. Wybierz **Wyodrębnij wszystkie** (nie uruchamiaj plików bezpośrednio z ZIP).
+4. Uruchom `INSTALL.cmd` z rozpakowanego folderu.
+5. Instalator pobierze źródła **bezpośrednio z oficjalnego GitLaba**, zastosuje poprawki i umieści dodatek w `Dokumenty\WhirlwindFX\Plugins\YeelightBilina`.
+6. Uruchom SignalRGB, wyłącz starsze testowe dodatki ColorC i sprawdź usługę **Yeelight Bilina**. W logach szukaj `[Bilina] Yeelight upstream-based fix v1.0.1 active`.
 
-**Status: prace nad portem i diagnostyką źródeł.** Nie instaluj poprzednich testowych wersji ColorC z tej rozmowy jako rozwiązania końcowego.
+**Uwaga:** Wtyczka z naszego repozytorium nie instaluje się przez samo `Check for Updates` w SignalRGB. Instaluje ją skrypt `INSTALL.cmd`.
+
+## Naprawione błędy
+
+- QML wywołuje `link(id)` / `unlink(id)` zamiast przekazywania obiektu QML.
+- Kod sprawdza, czy ID i kontroler istnieją, i nie dereferencjonuje `undefined`.
+- Dopasowuje klucze cache nawet przy rozbieżności typów ID.
+- Przy `Unlink` wyszukuje discovery socket po **IP**, zamiast po ID.
+- `PurgeCache` czyści także bieżącą mapę w pamięci.
+- Korekta domyślnego portu kontrolera `55544 → 55444`.
+- Brak wpisu IP cache nie powoduje próby tworzenia kontrolera z `undefined`.
+
+Żarówki użytkownika użyte w testach: `colorc`, adresy `192.168.1.149`, `192.168.1.150`, `192.168.1.153`. Adresy IP **nie są wpisane na stałe w dodatku**.
+
+## Testy i ograniczenia
+
+GitHub Actions klonuje aktualny upstream, nakłada poprawki oraz weryfikuje składnię i zachowanie `Link/Unlink` z symulowanym API SignalRGB. Dodatkowe zadanie uruchamia PowerShell na Windows. Testy **nie zastępują rzeczywistego sprawdzenia w Twojej instalacji**.
+
+Jeśli po `Link` nie działa synchronizacja, prześlij ostatnie komunikaty z konsoli, szczególnie zaczynające się od `[Bilina]`. Oryginalny dodatek obsługuje tylko kompatybilne urządzenia UDP, nie TCP-only.
+
+## Źródła i prawa
+
+Pochodzenie oryginału: [SignalRgb / Yeelight](https://gitlab.com/signalrgb/yeelight). Repozytorium upstream w pobranym archiwum nie zawiera osobnego pliku `LICENSE`. Z tego powodu to repozytorium publikuje **tylko własne skrypty nakładające poprawki i testy**, a nie kopię oryginalnego źródła. Instalator pobiera oryginał bezpośrednio od jego wydawcy. Nazwy SignalRGB/Yeelight należą do odpowiednich właścicieli. Projekt nie jest oficjalnym dodatkiem SignalRGB.
