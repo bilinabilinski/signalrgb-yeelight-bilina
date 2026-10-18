@@ -38,6 +38,9 @@ jobs:
       - name: Verify TCP native white restoration against mock bulb
         shell: pwsh
         run: node tests/test-white-restore.cjs
+      - name: Test actual SignalRGB exit monitoring with mock Yeelight
+        shell: pwsh
+        run: node tests/test-watcher.cjs
       - name: End-to-end installer download and install on Windows
         shell: powershell
         run: .\INSTALL.ps1 -SkipProcessCheck
