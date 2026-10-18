@@ -1,0 +1,19 @@
+name: Inspect original SignalRGB Yeelight source
+on:
+  workflow_dispatch:
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch original source from GitLab
+        run: |
+          git clone --depth 1 https://gitlab.com/signalrgb/yeelight.git upstream
+          find upstream -maxdepth 3 -type f | sort
+          echo "---- Link/Unlink/cache references ----"
+          grep -RnE 'cachedController|this\.link|this\.unlink|DiscoveryService|\.id' upstream --include='*.js' | head -100 || true
+      - name: Archive source for private inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: signalrgb-yeelight-upstream-inspection
+          path: upstream/
+          retention-days: 1
