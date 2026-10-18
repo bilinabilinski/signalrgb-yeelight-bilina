@@ -9,7 +9,7 @@ const qml = fs.readFileSync(path.join(dir, "Yeelight.qml"), "utf8");
 assert.match(qml, /discovery\.link\(root\.device\.id\)/);
 assert.match(qml, /discovery\.unlink\(root\.device\.id\)/);
 assert.doesNotMatch(qml, /discovery\.link\(root\.device\);/);
-assert.match(js, /Yeelight upstream-based fix v1\.0\.2 active/);
+assert.match(js, /Yeelight upstream-based fix v1\.0\.3 active/);
 assert.match(js, /this\.cacheMap\.clear\(\)/);
 assert.match(js, /value\?\.port \?\? 55444/);
 
@@ -93,9 +93,39 @@ packets.length = 0;
 context.controller = {model: "color"};
 vm.runInContext("Shutdown(false);", context);
 assert.equal(packets.length, 0);
-// Suspend still sends black for colorc, as in official code.
+// True black: zero RGB MUST power down colorc, never dim to 1%.
+// Test all three actual colorc models, repeated black, nonblack restoration,
+// cached frame deduplication and a second black frame.
+for (const [id, ip] of devices) {
+  packets.length = 0;
+  context.controller = {model: "colorc", ip};
+  vm.runInContext('lastData=0; lightOff=false; sendColors("#000000");', context);
+  assert.deepEqual(packets.map(p=>JSON.parse(p).method), ["set_power"],
+    "First black must physically turn off " + id);
+  assert.deepEqual(JSON.parse(packets[0]).params, ["off", "sudden"]);
+  vm.runInContext('sendColors("#000000");', context);
+  assert.equal(packets.length, 1, "Repeated black must not flood on/off packets");
+  vm.runInContext('sendColors("#FF0000");', context);
+  assert.deepEqual(packets.map(p=>JSON.parse(p).method),
+    ["set_power", "set_power", "set_bright", "set_rgb"]);
+  assert.deepEqual(JSON.parse(packets[1]).params, ["on", "sudden"]);
+  assert.deepEqual(JSON.parse(packets[2]).params, [100,"sudden",0]);
+  assert.deepEqual(JSON.parse(packets[3]).params, [16711680,"sudden",0]);
+  vm.runInContext('sendColors("#FF0000");', context);
+  assert.equal(packets.length, 4, "Repeated red frame must be deduplicated");
+  vm.runInContext('sendColors("#000000");', context);
+  assert.equal(packets.length, 5, "Second black after red must turn off");
+  assert.deepEqual(JSON.parse(packets[4]).params, ["off", "sudden"]);
+}
+// Existing behavior for another Yeelight model must remain unchanged.
+packets.length = 0;
+context.controller = {model: "color"};
+vm.runInContext('lastData=-1; lightOff=false; sendColors("#000000");', context);
+assert.deepEqual(packets.map(p=>JSON.parse(p).method),["set_bright", "set_rgb"]);
+assert.deepEqual(JSON.parse(packets[0]).params, [1, "sudden", 0]);
+// System suspend now also means true black for colorc.
 packets.length = 0;
 context.controller = {model: "colorc"};
-vm.runInContext("Shutdown(true);", context);
-assert.match(packets[packets.length - 1], /"params":\[0,"sudden",0\]/);
-console.log("PASS: syntax, 3 Link/Unlink bulbs, cache, 3 shutdown white restores, other models, suspend black.");
+vm.runInContext('lastData=16711680; lightOff=false; Shutdown(true);', context);
+assert.deepEqual(JSON.parse(packets[packets.length - 1]).params, ["off", "sudden"]);
+console.log("PASS: syntax, 3 Link/Unlink bulbs, cache, white restore, true black on all colorc, unchanged other models.");
