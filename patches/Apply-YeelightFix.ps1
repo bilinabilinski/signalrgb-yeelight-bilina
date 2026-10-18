@@ -112,15 +112,7 @@ $js = $js.Replace($createOld,$createNew)
 # The original Yeelight Shutdown() does nothing on normal SignalRGB exit unless
 # 'TurnOffOnShutdown' is enabled. For GU10 W1 Color ('colorc'), restore white.
 # Keep the original sleep/shutdown behaviour and all other Yeelight models intact.
-$originalShutdown = @'
-export function Shutdown(SystemSuspending) {
-	if(SystemSuspending){
-		sendColors("#000000");
-	}else if(TurnOffOnShutdown){
-		sendColors(shutdownColor);
-	}
-}
-'@
+$shutdownPattern = '(?s)export function Shutdown\(SystemSuspending\)\s*\{\s*if\s*\(SystemSuspending\)\s*\{\s*sendColors\("#000000"\);\s*\}\s*else if\s*\(TurnOffOnShutdown\)\s*\{\s*sendColors\(shutdownColor\);\s*\}\s*\}'
 $whiteShutdown = @'
 export function Shutdown(SystemSuspending) {
 	if (SystemSuspending) {
@@ -150,10 +142,10 @@ export function Shutdown(SystemSuspending) {
 	}
 }
 '@
-if (!$js.Contains($originalShutdown)) {
+if ([regex]::Matches($js, $shutdownPattern).Count -ne 1) {
     throw "Upstream Shutdown() changed; refusing to modify unknown code."
 }
-$js = $js.Replace($originalShutdown, $whiteShutdown)
+$js = [regex]::Replace($js, $shutdownPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $whiteShutdown }, 1)
 
 $js = $js.Replace('export function Name() { return "Yeelight"; }','export function Name() { return "Yeelight Bilina"; }')
 $js = $js.Replace('export function Version() { return "1.0.0"; }','export function Version() { return "1.0.2-bilina"; }')
