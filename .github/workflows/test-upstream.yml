@@ -35,6 +35,9 @@ jobs:
       - name: Run three-lamp regression tests
         shell: pwsh
         run: node tests/test-plugin.cjs build
+      - name: Verify TCP native white restoration against mock bulb
+        shell: pwsh
+        run: node tests/test-white-restore.cjs
       - name: End-to-end installer download and install on Windows
         shell: powershell
         run: .\INSTALL.ps1 -SkipProcessCheck
