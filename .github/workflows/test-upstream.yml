@@ -35,3 +35,6 @@ jobs:
       - name: Run three-lamp regression tests
         shell: pwsh
         run: node tests/test-plugin.cjs build
+      - name: End-to-end installer download and install on Windows
+        shell: powershell
+        run: .\INSTALL.ps1 -SkipProcessCheck
