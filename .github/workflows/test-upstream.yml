@@ -38,6 +38,9 @@ jobs:
       - name: Verify TCP native white restoration against mock bulb
         shell: pwsh
         run: node tests/test-white-restore.cjs
+      - name: Test Windows shutdown session-ending hook with mock bulbs
+        shell: pwsh
+        run: node tests/test-windows-shutdown.cjs
       - name: Test actual SignalRGB exit monitoring with mock Yeelight
         shell: pwsh
         run: node tests/test-watcher.cjs
