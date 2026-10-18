@@ -97,7 +97,8 @@ function SignalRGB-Running() {
 }
 function Restore-All {
     $pending = @($ips)
-    for ($attempt=1; $attempt -le 9; $attempt++) {
+    $maxAttempts = if ($Once) { 2 } else { 9 }
+    for ($attempt=1; $attempt -le $maxAttempts; $attempt++) {
         if ($Watch -and (SignalRGB-Running)) {
             Log-Message "SignalRGB restarted; cancelled pending restoration."
             return $false
@@ -108,7 +109,7 @@ function Restore-All {
         }
         if ($failed.Count -eq 0) { return $true }
         $pending = $failed
-        if ($attempt -lt 9) { Start-Sleep -Seconds 5 }
+        if ($attempt -lt $maxAttempts) { Start-Sleep -Seconds 5 }
     }
     Log-Message ("White restore incomplete for: " + ($pending -join ", "))
     return $false
