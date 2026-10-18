@@ -108,10 +108,57 @@ const cached = discovery.cache.GetByIP(this.ipToConnectTo);
 '@
 if (!$js.Contains($createOld)) {throw "UDP cache lookup changed; stopping."}
 $js = $js.Replace($createOld,$createNew)
+
+# The original Yeelight Shutdown() does nothing on normal SignalRGB exit unless
+# 'TurnOffOnShutdown' is enabled. For GU10 W1 Color ('colorc'), restore white.
+# Keep the original sleep/shutdown behaviour and all other Yeelight models intact.
+$originalShutdown = @'
+export function Shutdown(SystemSuspending) {
+	if(SystemSuspending){
+		sendColors("#000000");
+	}else if(TurnOffOnShutdown){
+		sendColors(shutdownColor);
+	}
+}
+'@
+$whiteShutdown = @'
+export function Shutdown(SystemSuspending) {
+	if (SystemSuspending) {
+		sendColors("#000000");
+		return;
+	}
+
+	// GU10 W1 Color, model colorc. No other devices are changed.
+	if (controller && String(controller.model).trim().toLowerCase() === "colorc") {
+		if (!Yeelight.getIsTokenActive()) {
+			device.log("[Bilina] Cannot restore white: UDP token not active");
+			return;
+		}
+		// Restore power and brightness even when the last animated frame was dark.
+		Yeelight.setDevicePower(true);
+		Yeelight.setDeviceBrightness(100);
+		lightOff = false;
+		lastData = -1; // force a final packet, including when the last frame was white
+		sendColors("#FFFFFF");
+		device.log("[Bilina] Restored colorc to white on SignalRGB exit");
+		return;
+	}
+
+	// Preserve upstream behaviour for all other supported models.
+	if (TurnOffOnShutdown) {
+		sendColors(shutdownColor);
+	}
+}
+'@
+if (!$js.Contains($originalShutdown)) {
+    throw "Upstream Shutdown() changed; refusing to modify unknown code."
+}
+$js = $js.Replace($originalShutdown, $whiteShutdown)
+
 $js = $js.Replace('export function Name() { return "Yeelight"; }','export function Name() { return "Yeelight Bilina"; }')
-$js = $js.Replace('export function Version() { return "1.0.0"; }','export function Version() { return "1.0.1-bilina"; }')
+$js = $js.Replace('export function Version() { return "1.0.0"; }','export function Version() { return "1.0.2-bilina"; }')
 if (!$js.Contains('service.log("Initializing Plugin!");')) {throw "Initialize() changed; stopping."}
-$js = $js.Replace('service.log("Initializing Plugin!");','service.log("[Bilina] Yeelight upstream-based fix v1.0.1 active");')
+$js = $js.Replace('service.log("Initializing Plugin!");','service.log("[Bilina] Yeelight upstream-based fix v1.0.2 active");')
 New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
 [System.IO.File]::WriteAllText((Join-Path $DestinationDirectory "Yeelight.js"),$js,(New-Object System.Text.UTF8Encoding($false)))
 [System.IO.File]::WriteAllText((Join-Path $DestinationDirectory "Yeelight.qml"),$qml,(New-Object System.Text.UTF8Encoding($false)))
@@ -119,4 +166,4 @@ $components = Join-Path $SourceDirectory "Components"
 if (Test-Path $components) {
     Copy-Item -LiteralPath $components -Destination (Join-Path $DestinationDirectory "Components") -Recurse -Force
 }
-Write-Host "PATCH OK: stable QML IDs, Link/Unlink, cache purge, UDP fallback." -ForegroundColor Green
+Write-Host "PATCH OK: stable QML IDs, Link/Unlink, cache purge, UDP fallback, white restore on exit." -ForegroundColor Green
