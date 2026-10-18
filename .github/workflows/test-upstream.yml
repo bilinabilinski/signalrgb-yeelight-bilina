@@ -18,3 +18,20 @@ jobs:
         run: node --check build/Yeelight.js
       - name: Test integration via service mocks
         run: node tests/test-plugin.cjs build
+
+  windows-native:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout patch tools
+        uses: actions/checkout@v4
+      - name: Clone upstream sources
+        run: git clone --depth 1 https://gitlab.com/signalrgb/yeelight.git upstream
+      - name: Apply patches with Windows PowerShell 5.1
+        shell: powershell
+        run: .\patches\Apply-YeelightFix.ps1 -SourceDirectory .\upstream -DestinationDirectory .\build
+      - name: Validate JS syntax
+        shell: pwsh
+        run: node --check build/Yeelight.js
+      - name: Run three-lamp regression tests
+        shell: pwsh
+        run: node tests/test-plugin.cjs build
