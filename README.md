@@ -26,6 +26,18 @@ Działa to niezależnie od wcześniej zapamiętanej opcji `Turn off on unlink pr
 
 Aby wgrać poprawkę, pobierz ponownie **najnowszy ZIP** repozytorium, rozpakuj i uruchom `INSTALL.cmd`. Poprzednia kopia wtyczki jest zachowywana jako folder backup.
 
+## Przywracanie bieli podczas wyłączania Windows (nowe)
+
+**Problem:** poprzednia wersja wykrywała wyłącznie zamknięcie procesu `SignalRGB.exe`. Podczas wyłączania Windows proces monitora mógł zostać zakończony wcześniej, a niektóre pakiety trafiały do żarówek, kiedy sieć była już wyłączona.
+
+**Poprawka:** do monitora dodano natywne powiadomienia Windows `Microsoft.Win32.SystemEvents.SessionEnding` i `SessionEnded`. Przy normalnym wylogowaniu lub zamknięciu systemu mechanizm podejmuje próbę szybkiego przywrócenia bieli **jeszcze przed zamknięciem sesji**. Do trzech żarówek jednocześnie wysyła przez TCP 55443: `set_power(on)`, `set_ct_abx(4000)`, `set_bright(100)`. Odpowiedzi są weryfikowane. Przy zamykaniu systemu próby są krótkie, żeby nie blokować wyłączania.
+
+**Aktualizacja:** pobierz nowy ZIP tego repozytorium, rozpakuj i ponownie uruchom **`INSTALL_WHITE_RESTORE.cmd`**. Instalator zatrzyma stary monitor, skopiuje nowy skrypt i `YeelightWindowsShutdown.cs`, zainstaluje skrót autostartu i uruchomi monitor. **Nie trzeba reinstalować głównej wtyczki `Yeelight Bilina`.**
+
+**Diagnostyka bez wyłączania komputera:** zamknij SignalRGB przez `Exit`, następnie uruchom `TEST_WINDOWS_SHUTDOWN.cmd`. Test symuluje oba sygnały Windows i faktycznie wysyła komendy bieli do żarówek; **nie wyłącza komputera**. Log znajduje się w `%LOCALAPPDATA%\YeelightBilina\white-restore.log`. Przy uruchomionym monitorze powinien zawierać `WINDOWS_SHUTDOWN_LISTENER_REGISTERED`, a po teście `SIMULATED_WINDOWS_SESSION_ENDING OK` i `SIMULATED_WINDOWS_SESSION_ENDED OK`.
+
+**Ograniczenia:** Windows może zakończyć procesy lub połączenie sieciowe wcześniej w przypadku wymuszonego wyłączenia, utraty zasilania, aktualizacji awaryjnej i niektórych konfiguracji usypiania. Sam sygnał Windows i test symulowany nie gwarantują, że każda fizyczna żarówka przyjmie polecenie podczas rzeczywistego wyłączenia. Funkcjonalność wymaga interaktywnej sesji użytkownika oraz działającej sieci.
+
 ## Automatyczny powrót do prawdziwej bieli po zamknięciu SignalRGB
 
 **Zalecane rozwiązanie dla GU10 W1 Color (`colorc`):** wtyczka SignalRGB nie zawsze ma czas przesłać pakiety podczas zamykania aplikacji. Dlatego dodany jest **opcjonalny, niezależny proces Windows**, który wykrywa zakończenie `SignalRGB.exe` i następnie przywraca natywny tryb bieli Yeelight przez TCP 55443.
