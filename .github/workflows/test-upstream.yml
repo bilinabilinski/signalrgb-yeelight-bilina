@@ -1,0 +1,20 @@
+name: Test Yeelight Bilina patch
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout our patch tools
+        uses: actions/checkout@v4
+      - name: Clone official upstream sources
+        run: git clone --depth 1 https://gitlab.com/signalrgb/yeelight.git upstream
+      - name: Apply fixes to upstream
+        shell: pwsh
+        run: ./patches/Apply-YeelightFix.ps1 -SourceDirectory ./upstream -DestinationDirectory ./build
+      - name: Check JavaScript syntax
+        run: node --check build/Yeelight.js
+      - name: Test integration via service mocks
+        run: node tests/test-plugin.cjs build
