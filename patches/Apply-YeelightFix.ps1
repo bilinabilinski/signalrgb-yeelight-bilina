@@ -109,6 +109,44 @@ const cached = discovery.cache.GetByIP(this.ipToConnectTo);
 if (!$js.Contains($createOld)) {throw "UDP cache lookup changed; stopping."}
 $js = $js.Replace($createOld,$createNew)
 
+# True black for GU10 W1 Color: brightness=1 never produces absolute darkness.
+# Insert a small model-specific branch into the native upstream renderer.
+# Keep existing RGB handling unchanged for every other Yeelight model.
+$renderAnchor = 'const RGBData = grabColors(overrideColor);'
+if ([regex]::Matches($js, [regex]::Escape($renderAnchor)).Count -ne 1) {
+    throw "Upstream single-zone RGB renderer changed; refusing to change black handling."
+}
+$blackHandling = @'
+
+        // Bilina: colorc supports true black via power-off (1% brightness is not black).
+        if (controller && String(controller.model).trim().toLowerCase() === "colorc") {
+            if (RGBData === 0) {
+                if (!lightOff) {
+                    Yeelight.setDevicePower(false);
+                    lightOff = true;
+                    lastData = 0;
+                }
+                return;
+            }
+
+            if (lightOff) {
+                // Recover from black even if the new RGB equals the previous cached value.
+                Yeelight.setDevicePower(true);
+                Yeelight.setDeviceBrightness(100);
+                lightOff = false;
+                lastData = -1;
+            }
+
+            if (lastData !== RGBData) {
+                Yeelight.setRGB(RGBData);
+                lastData = RGBData;
+            }
+            return;
+        }
+'@
+$js = $js.Replace($renderAnchor, $renderAnchor + $blackHandling)
+
+
 # The original Yeelight Shutdown() does nothing on normal SignalRGB exit unless
 # 'TurnOffOnShutdown' is enabled. For GU10 W1 Color ('colorc'), restore white.
 # Keep the original sleep/shutdown behaviour and all other Yeelight models intact.
@@ -148,9 +186,9 @@ if ([regex]::Matches($js, $shutdownPattern).Count -ne 1) {
 $js = [regex]::Replace($js, $shutdownPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $whiteShutdown }, 1)
 
 $js = $js.Replace('export function Name() { return "Yeelight"; }','export function Name() { return "Yeelight Bilina"; }')
-$js = $js.Replace('export function Version() { return "1.0.0"; }','export function Version() { return "1.0.2-bilina"; }')
+$js = $js.Replace('export function Version() { return "1.0.0"; }','export function Version() { return "1.0.3-bilina"; }')
 if (!$js.Contains('service.log("Initializing Plugin!");')) {throw "Initialize() changed; stopping."}
-$js = $js.Replace('service.log("Initializing Plugin!");','service.log("[Bilina] Yeelight upstream-based fix v1.0.2 active");')
+$js = $js.Replace('service.log("Initializing Plugin!");','service.log("[Bilina] Yeelight upstream-based fix v1.0.3 active");')
 New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
 [System.IO.File]::WriteAllText((Join-Path $DestinationDirectory "Yeelight.js"),$js,(New-Object System.Text.UTF8Encoding($false)))
 [System.IO.File]::WriteAllText((Join-Path $DestinationDirectory "Yeelight.qml"),$qml,(New-Object System.Text.UTF8Encoding($false)))
@@ -158,4 +196,4 @@ $components = Join-Path $SourceDirectory "Components"
 if (Test-Path $components) {
     Copy-Item -LiteralPath $components -Destination (Join-Path $DestinationDirectory "Components") -Recurse -Force
 }
-Write-Host "PATCH OK: stable QML IDs, Link/Unlink, cache purge, UDP fallback, white restore on exit." -ForegroundColor Green
+Write-Host "PATCH OK: stable QML IDs, Link/Unlink, cache purge, UDP fallback, true black for colorc, white restore on exit." -ForegroundColor Green
