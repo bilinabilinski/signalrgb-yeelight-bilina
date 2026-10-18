@@ -41,8 +41,8 @@ async function main(){
     assert.deepEqual(messages.map(x=>x.method),
       ["set_power","set_ct_abx","set_bright","set_power","set_ct_abx","set_bright"]);
     assert.deepEqual(messages[1].params,[4000,"smooth",300]);
-    assert.match(out,/SIMULATED_WINDOWS_SHUTDOWN_OK/);
     const logfile=fs.readFileSync(log,"utf8");
+    assert.match(logfile,/SIMULATED_WINDOWS_SHUTDOWN_OK/);
     assert.match(logfile,/WINDOWS_SHUTDOWN_LISTENER_REGISTERED/);
     assert.match(logfile,/SIMULATED_WINDOWS_SESSION_ENDING OK/);
     assert.match(logfile,/SIMULATED_WINDOWS_SESSION_ENDED OK/);
