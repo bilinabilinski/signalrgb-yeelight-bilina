@@ -1,5 +1,6 @@
 # Installs a small background watcher via the current user's Startup folder.
 # It runs only under the signed-in user, requires no administrator rights.
+param([switch]$SkipStart)
 $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $source = Join-Path $here "Watch-SignalRGB.ps1"
@@ -28,7 +29,7 @@ $shortcut.WindowStyle = 7
 $shortcut.Description = "Return Yeelight colorc bulbs to white after SignalRGB exits."
 $shortcut.Save()
 # Start immediately; the mutex in the watcher prevents simultaneous instances.
-Start-Process -FilePath $psPath -WindowStyle Hidden -ArgumentList $shortcut.Arguments
+if (!$SkipStart) { Start-Process -FilePath $psPath -WindowStyle Hidden -ArgumentList $shortcut.Arguments }
 Write-Host "Installed Yeelight white restoration watcher." -ForegroundColor Green
 Write-Host "Startup shortcut: $shortcutPath"
 Write-Host "Config (edit Kelvin/brightness if desired): $conf"
